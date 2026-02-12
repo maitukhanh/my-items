@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 interface Location {
     id: string;
     name: string;
-    _count: { items: number };
+    _count?: { items: number }; // Optional to prevent crash
 }
 
 export default function LocationsPage() {
@@ -21,17 +21,26 @@ export default function LocationsPage() {
 
     const fetchLocations = async () => {
         setIsLoading(true);
+        setError("");
         try {
             const res = await fetch("/api/locations");
-            if (!res.ok) throw new Error("Không tải được danh sách địa điểm");
-            const data = await res.json();
-            if (!Array.isArray(data)) {
-                console.error("API returned invalid data:", data);
-                throw new Error("Dữ liệu trả về không hợp lệ");
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Lỗi API: ${res.status} - ${text}`);
             }
+            const data = await res.json();
+
+            if (!Array.isArray(data)) {
+                // Fallback if data is not array
+                console.error("Data is not array:", data);
+                setLocations([]);
+                throw new Error("Dữ liệu từ server không đúng định dạng danh sách");
+            }
+
             setLocations(data);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Lỗi hệ thống");
+            console.error("Fetch error:", err);
+            setError(err instanceof Error ? err.message : "Lỗi không xác định khi tải dữ liệu");
         } finally {
             setIsLoading(false);
         }
@@ -52,11 +61,11 @@ export default function LocationsPage() {
                 body: JSON.stringify({ name: newName.trim() }),
             });
             if (!res.ok) {
-                const errData = await res.json();
+                const errData = await res.json().catch(() => ({}));
                 throw new Error(errData.error || "Thêm thất bại");
             }
             setNewName("");
-            fetchLocations(); // Refresh list
+            fetchLocations();
         } catch (err) {
             alert(err instanceof Error ? err.message : "Lỗi khi thêm");
         }
@@ -74,7 +83,7 @@ export default function LocationsPage() {
                 method: "DELETE",
             });
             if (!res.ok) {
-                const errData = await res.json();
+                const errData = await res.json().catch(() => ({}));
                 throw new Error(errData.error || "Xóa thất bại");
             }
             fetchLocations();
@@ -102,7 +111,7 @@ export default function LocationsPage() {
                 body: JSON.stringify({ name: editName.trim() }),
             });
             if (!res.ok) {
-                const errData = await res.json();
+                const errData = await res.json().catch(() => ({}));
                 throw new Error(errData.error || "Cập nhật thất bại");
             }
             setEditingId(null);
@@ -123,10 +132,24 @@ export default function LocationsPage() {
                             </svg>
                             Quay lại trang chính
                         </Link>
-                        <h1 className="text-3xl font-bold text-slate-900">Quản Lý Vị Trí (Mới)</h1>
+                        <h1 className="text-3xl font-bold text-slate-900">Quản Lý Vị Trí</h1>
                         <p className="text-slate-500 mt-1">Thêm, sửa, xóa các vị trí để quản lý đồ đạc dễ dàng hơn.</p>
                     </div>
                 </div>
+
+                {/* Show Error if any */}
+                {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3">
+                        <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                            <p className="font-bold">Đã có lỗi xảy ra:</p>
+                            <p className="text-sm">{error}</p>
+                            <button onClick={fetchLocations} className="text-sm underline mt-1 hover:text-red-900">Thử lại</button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Add New Location Form */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
@@ -153,7 +176,7 @@ export default function LocationsPage() {
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     {isLoading ? (
                         <div className="p-8 text-center text-slate-500">Đang tải danh sách...</div>
-                    ) : locations.length === 0 ? (
+                    ) : locations.length === 0 && !error ? (
                         <div className="p-12 text-center">
                             <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
                                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,48 +197,53 @@ export default function LocationsPage() {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-200">
-                                {locations.map((loc) => (
-                                    <tr key={loc.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {editingId === loc.id ? (
-                                                <input
-                                                    type="text"
-                                                    value={editName}
-                                                    onChange={(e) => setEditName(e.target.value)}
-                                                    className="w-full px-3 py-1.5 rounded border border-indigo-300 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                                    autoFocus
-                                                />
-                                            ) : (
-                                                <div className="text-sm font-medium text-slate-900">{loc.name}</div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${loc._count.items > 0 ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'}`}>
-                                                {loc._count.items} món đồ
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            {editingId === loc.id ? (
-                                                <div className="flex justify-end gap-3">
-                                                    <button onClick={() => handleSaveEdit(loc.id)} className="text-indigo-600 hover:text-indigo-900 font-bold">Lưu</button>
-                                                    <button onClick={cancelEdit} className="text-slate-500 hover:text-slate-700">Hủy</button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex justify-end gap-4">
-                                                    <button onClick={() => startEdit(loc)} className="text-indigo-600 hover:text-indigo-900">Sửa</button>
-                                                    <button
-                                                        onClick={() => handleDelete(loc.id, loc._count.items)}
-                                                        className={`transition-colors ${loc._count.items > 0 ? 'text-slate-300 cursor-not-allowed' : 'text-red-600 hover:text-red-900'}`}
-                                                        disabled={loc._count.items > 0}
-                                                        title={loc._count.items > 0 ? "Không thể xóa vị trí đang có đồ" : "Xóa vị trí này"}
-                                                    >
-                                                        Xóa
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
+                                {Array.isArray(locations) && locations.map((loc) => {
+                                    // Safe access to count
+                                    const itemCount = loc._count?.items || 0;
+
+                                    return (
+                                        <tr key={loc.id} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {editingId === loc.id ? (
+                                                    <input
+                                                        type="text"
+                                                        value={editName}
+                                                        onChange={(e) => setEditName(e.target.value)}
+                                                        className="w-full px-3 py-1.5 rounded border border-indigo-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                        autoFocus
+                                                    />
+                                                ) : (
+                                                    <div className="text-sm font-medium text-slate-900">{loc.name}</div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${itemCount > 0 ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'}`}>
+                                                    {itemCount} món đồ
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                {editingId === loc.id ? (
+                                                    <div className="flex justify-end gap-3">
+                                                        <button onClick={() => handleSaveEdit(loc.id)} className="text-indigo-600 hover:text-indigo-900 font-bold">Lưu</button>
+                                                        <button onClick={cancelEdit} className="text-slate-500 hover:text-slate-700">Hủy</button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex justify-end gap-4">
+                                                        <button onClick={() => startEdit(loc)} className="text-indigo-600 hover:text-indigo-900">Sửa</button>
+                                                        <button
+                                                            onClick={() => handleDelete(loc.id, itemCount)}
+                                                            className={`transition-colors ${itemCount > 0 ? 'text-slate-300 cursor-not-allowed' : 'text-red-600 hover:text-red-900'}`}
+                                                            disabled={itemCount > 0}
+                                                            title={itemCount > 0 ? "Không thể xóa vị trí đang có đồ" : "Xóa vị trí này"}
+                                                        >
+                                                            Xóa
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     )}
