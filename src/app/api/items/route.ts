@@ -8,7 +8,11 @@ export async function GET() {
         });
         return NextResponse.json(items, { status: 200 });
     } catch (error) {
-        return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
+        console.error("GET /api/items error:", error);
+        return NextResponse.json(
+            { error: "Failed to fetch", details: String(error) },
+            { status: 500 }
+        );
     }
 }
 
@@ -22,7 +26,6 @@ export async function POST(request: NextRequest) {
         let imageUrl: string | null = null;
 
         if (imageFile && imageFile.size > 0) {
-            // Chuyển ảnh sang Base64 để lưu trực tiếp vào DB (tiện cho deploy cloud)
             const buffer = Buffer.from(await imageFile.arrayBuffer());
             const base64Image = buffer.toString("base64");
             imageUrl = `data:${imageFile.type};base64,${base64Image}`;
@@ -34,6 +37,10 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(item, { status: 201 });
     } catch (error) {
-        return NextResponse.json({ error: "Failed to create" }, { status: 500 });
+        console.error("POST /api/items error:", error);
+        return NextResponse.json(
+            { error: "Failed to create", details: String(error) },
+            { status: 500 }
+        );
     }
 }
