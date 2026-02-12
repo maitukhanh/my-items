@@ -25,6 +25,10 @@ export default function LocationsPage() {
             const res = await fetch("/api/locations");
             if (!res.ok) throw new Error("Không tải được danh sách địa điểm");
             const data = await res.json();
+            if (!Array.isArray(data)) {
+                console.error("API returned invalid data:", data);
+                throw new Error("Dữ liệu trả về không hợp lệ");
+            }
             setLocations(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Lỗi hệ thống");
