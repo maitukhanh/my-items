@@ -46,13 +46,13 @@ export default function HomePage() {
                             </svg>
                             Personal Item Manager
                         </div>
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-4 animate-slide-up">
+                        <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white mb-8 animate-slide-up tracking-tighter">
                             Track Your{" "}
                             <span className="bg-gradient-to-r from-brand-400 to-purple-400 bg-clip-text text-transparent">
                                 Belongings
                             </span>
                         </h1>
-                        <p className="text-lg text-slate-400 max-w-2xl mx-auto animate-fade-in">
+                        <p className="text-2xl md:text-3xl text-white/90 max-w-4xl mx-auto animate-fade-in leading-tight font-medium">
                             Never lose track of your items again. Catalog, search, and organize
                             everything in one beautiful place.
                         </p>
