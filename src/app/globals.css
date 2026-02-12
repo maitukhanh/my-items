@@ -5,9 +5,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --gradient-start: #0f0c29;
-  --gradient-mid: #1a1a3e;
-  --gradient-end: #24243e;
+  --gradient-start: #f8fafc;
+  /* Slate 50 */
+  --gradient-mid: #f1f5f9;
+  /* Slate 100 */
+  --gradient-end: #e2e8f0;
+  /* Slate 200 */
 }
 
 * {
@@ -20,7 +23,8 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   background: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid), var(--gradient-end));
   min-height: 100vh;
-  color: #e2e8f0;
+  color: #1e293b;
+  /* Slate 800 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -31,7 +35,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -43,36 +47,39 @@ body {
   background: rgba(99, 102, 241, 0.6);
 }
 
-/* Glass effect utility */
+/* Glass effect utility - Light Theme */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 .glass-strong {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
 }
 
-/* Glow effects */
+/* Glow effects - Adapted for light theme */
 .glow-indigo {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15),
-              0 0 60px rgba(99, 102, 241, 0.05);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.1),
+    0 0 60px rgba(99, 102, 241, 0.05);
 }
 
 .glow-indigo-strong {
-  box-shadow: 0 0 30px rgba(99, 102, 241, 0.25),
-              0 0 80px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.2),
+    0 0 80px rgba(99, 102, 241, 0.1);
 }
 
 /* Input focus glow */
-input:focus, textarea:focus {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3),
-              0 0 20px rgba(99, 102, 241, 0.1);
+input:focus,
+textarea:focus {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2),
+    0 0 10px rgba(99, 102, 241, 0.1);
 }
 
 /* Card hover lift */
@@ -82,14 +89,21 @@ input:focus, textarea:focus {
 
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3),
-              0 0 30px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08),
+    0 0 30px rgba(99, 102, 241, 0.1);
 }
 
 /* Subtle pulse animation */
 @keyframes subtlePulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .animate-subtle-pulse {
@@ -98,17 +112,20 @@ input:focus, textarea:focus {
 
 /* Shimmer loading effect */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.03) 25%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.03) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(226, 232, 240, 0.4) 25%,
+      rgba(226, 232, 240, 0.8) 50%,
+      rgba(226, 232, 240, 0.4) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
