@@ -1,0 +1,68 @@
+
+You are a senior full-stack engineer.
+
+Generate a complete runnable web app:
+
+Tech stack:
+
+* Next.js (App Router) + TypeScript
+* PostgreSQL
+* Prisma ORM
+* TailwindCSS
+* Next.js API routes
+
+App: Personal Item Manager
+
+Features:
+
+1. Add item form:
+
+   * name (required)
+   * location (required)
+   * image upload (store in /public/uploads or base64)
+   * validation
+   * reset after submit
+   * auto refresh list
+
+2. Item list:
+
+   * card layout
+   * image, name, location, createdAt
+   * responsive grid (1 col mobile, 3+ desktop)
+
+3. Search bar:
+
+   * search by name or location
+   * client-side filter
+   * debounce 300ms
+   * no page reload
+
+Database (Prisma):
+
+model Item {
+id        String   @id @default(uuid())
+name      String
+location  String
+imageUrl  String?
+createdAt DateTime @default(now())
+}
+
+API:
+
+* GET /api/items
+* POST /api/items
+* proper validation + status codes
+
+Output requirements:
+
+* Full source code per file
+* Show folder structure
+* Include package.json
+* Include prisma/schema.prisma
+* Include setup steps:
+  npm install
+  npx prisma migrate dev
+  npm run dev
+
+Do not use Firebase, MongoDB, or external backend.
+No pseudocode. Production-ready code only.
