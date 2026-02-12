@@ -6,10 +6,10 @@ const prisma = new PrismaClient();
 // DELETE
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const id = params.id;
+        const { id } = await params; // Await params in Next.js 15
         await prisma.item.delete({
             where: { id },
         });
@@ -26,10 +26,10 @@ export async function DELETE(
 // PATCH - Update Item
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const id = params.id;
+        const { id } = await params; // Await params in Next.js 15
         const formData = await request.formData();
 
         const name = formData.get("name") as string;
@@ -37,7 +37,7 @@ export async function PATCH(
         const removeImage = formData.get("removeImage") === "true";
         const imageFile = formData.get("image") as File | null;
 
-        // Prepare raw update data (using any to bypass strict type check for conditional add)
+        // Prepare raw update data
         const updateData: any = {};
 
         if (name) updateData.name = name;
@@ -53,12 +53,9 @@ export async function PATCH(
 
         // Location Relation Handling
         if (locationId) {
-            // Relink to new location
             updateData.location = {
                 connect: { id: locationId }
             };
-            // Optional: Clear legacy location if we move to strict relation
-            // updateData.legacyLocation = null;
         } else if (locationId === "") { // Explicitly cleared
             updateData.location = { disconnect: true };
         }
