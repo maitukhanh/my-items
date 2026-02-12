@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
+
+export const dynamic = 'force-dynamic'; // Prevent static caching
+
+const prisma = new PrismaClient();
 
 export async function GET() {
     try {
@@ -8,10 +12,13 @@ export async function GET() {
             include: { location: true }, // Include Location details
         });
 
-        // Map data to easy-to-use format
+        // Map data to handle compatibility
+        // Important: Overwrite 'location' object with string name for frontend compatibility
         const formattedItems = items.map(item => ({
             ...item,
-            locationName: item.location?.name || item.legacyLocation || "Chưa có vị trí", // Prefer relationship, fallback to legacy
+            location: item.location?.name || item.legacyLocation || "Chưa có vị trí", // Overwrite location object with string
+            rawLocation: item.location, // Keep raw object if needed (optional)
+            locationName: item.location?.name || item.legacyLocation || "Chưa có vị trí"
         }));
 
         return NextResponse.json(formattedItems, { status: 200 });
@@ -28,11 +35,7 @@ export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
         const name = formData.get("name") as string;
-        // Accept either locationId (new) or location (legacy text if user enters custom?)
-        // For now, assume locationId is passed if selected from dropdown.
         const locationId = formData.get("locationId") as string;
-        // If we still want to support legacy text input (optional)
-        const legacyLocation = formData.get("location") as string;
 
         const imageFile = formData.get("image") as File | null;
 
@@ -44,27 +47,41 @@ export async function POST(request: NextRequest) {
         }
 
         let imageUrl = null;
-        if (imageFile) {
+        if (imageFile && imageFile.size > 0) {
             const buffer = Buffer.from(await imageFile.arrayBuffer());
             const base64Image = `data:${imageFile.type};base64,${buffer.toString("base64")}`;
             imageUrl = base64Image;
         }
 
+        // Logic Location
+        let locationData = {};
+        if (locationId) {
+            locationData = { location: { connect: { id: locationId } } };
+        }
+        // Note: We don't save legacyLocation for new items if we enforce relation.
+        // But if locationId is missing, we could treat it as "Chưa có".
+
         const newItem = await prisma.item.create({
             data: {
                 name,
-                locationId: locationId || null,
-                legacyLocation: !locationId ? legacyLocation : null, // Only save legacy if no ID provided
                 imageUrl,
+                ...locationData,
             },
-            include: { location: true },
+            include: { location: true } // Return fully populated item
         });
 
-        return NextResponse.json(newItem, { status: 201 });
+        // Format return data consistently
+        const formattedItem = {
+            ...newItem,
+            location: newItem.location?.name || "Chưa có vị trí",
+            locationName: newItem.location?.name || "Chưa có vị trí"
+        };
+
+        return NextResponse.json(formattedItem, { status: 201 });
     } catch (error) {
         console.error("POST /api/items error:", error);
         return NextResponse.json(
-            { error: "Failed to create", details: String(error) },
+            { error: "Failed to create item", details: String(error) },
             { status: 500 }
         );
     }
