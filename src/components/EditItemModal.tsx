@@ -1,12 +1,20 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 
 interface Item {
     id: string;
     name: string;
-    location: string;
+    locationName?: string; // Display name
+    locationId?: string | null; // ID if linked
+    legacyLocation?: string | null; // Old text if not linked
     imageUrl: string | null;
+}
+
+interface Location {
+    id: string;
+    name: string;
 }
 
 interface EditItemModalProps {
@@ -18,7 +26,13 @@ interface EditItemModalProps {
 
 export default function EditItemModal({ item, isOpen, onClose, onUpdated }: EditItemModalProps) {
     const [name, setName] = useState(item.name);
-    const [location, setLocation] = useState(item.location);
+    // locationId might be null if legacy item.
+    const [locationId, setLocationId] = useState(item.locationId || "");
+    const [locations, setLocations] = useState<Location[]>([]);
+
+    // Legacy support: show what the old location text was if not mapped yet
+    const legacyText = !item.locationId ? (item.legacyLocation || item.locationName) : "";
+
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(item.imageUrl);
     const [removeImage, setRemoveImage] = useState(false);
@@ -26,13 +40,21 @@ export default function EditItemModal({ item, isOpen, onClose, onUpdated }: Edit
     const [errors, setErrors] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Fetch locations
     useEffect(() => {
         if (isOpen) {
+            // Reset form based on item props
             setName(item.name);
-            setLocation(item.location);
+            setLocationId(item.locationId || "");
             setImagePreview(item.imageUrl);
             setRemoveImage(false);
             setImageFile(null);
+
+            // Load locations
+            fetch("/api/locations")
+                .then(res => res.json())
+                .then(data => setLocations(data))
+                .catch(err => console.error("Failed to load locations", err));
         }
     }, [isOpen, item]);
 
@@ -59,7 +81,7 @@ export default function EditItemModal({ item, isOpen, onClose, onUpdated }: Edit
         try {
             const formData = new FormData();
             formData.append("name", name);
-            formData.append("location", location);
+            formData.append("locationId", locationId);
             if (imageFile) {
                 formData.append("image", imageFile);
             }
@@ -88,7 +110,7 @@ export default function EditItemModal({ item, isOpen, onClose, onUpdated }: Edit
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white w-full max-w-lg rounded-2xl p-6 md:p-8 shadow-2xl animate-scale-in border border-slate-100">
+            <div className="bg-white w-full max-w-lg rounded-2xl p-6 md:p-8 shadow-2xl animate-scale-in border border-slate-100 max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-slate-900">Chỉnh Sửa Món Đồ</h2>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -111,14 +133,39 @@ export default function EditItemModal({ item, isOpen, onClose, onUpdated }: Edit
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Vị trí</label>
-                        <input
-                            type="text"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
-                            required
-                        />
+                        <div className="flex justify-between mb-1">
+                            <label className="block text-sm font-medium text-slate-700">Vị trí</label>
+                            <Link href="/locations" className="text-xs text-indigo-600 font-medium">+ Tạo mới</Link>
+                        </div>
+
+                        <div className="relative">
+                            <select
+                                value={locationId}
+                                onChange={(e) => setLocationId(e.target.value)}
+                                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all appearance-none"
+                            >
+                                <option value="">-- Chọn vị trí --</option>
+                                {locations.map((loc) => (
+                                    <option key={loc.id} value={loc.id}>
+                                        {loc.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-500">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                        {/* Show legacy value helper if exists and not mapped */}
+                        {!locationId && legacyText && (
+                            <p className="text-xs text-amber-600 mt-1">
+                                Vị trí cũ là: <strong>{typeof legacyText === 'string' ? legacyText : ''}</strong>. Hãy chọn lại vị trí đúng từ danh sách.
+                            </p>
+                        )}
+                        {!locationId && !legacyText && (
+                            <p className="text-xs text-red-500 mt-1">Vui lòng chọn vị trí.</p>
+                        )}
                     </div>
 
                     <div>
@@ -154,7 +201,7 @@ export default function EditItemModal({ item, isOpen, onClose, onUpdated }: Edit
                             )}
                             <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
                             <div className="text-xs text-slate-500">
-                                Nhấn vào ảnh để xóa hoặc nhấn nút cộng để thêm ảnh mới.
+                                Nhấn vào ảnh để xóa hoặc nút cộng để thêm ảnh mới.
                             </div>
                         </div>
                     </div>
@@ -169,7 +216,7 @@ export default function EditItemModal({ item, isOpen, onClose, onUpdated }: Edit
                         </button>
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || (!locationId && !legacyText)} // Allow submit if legacy text exists? Or force update? Let's allow update name only, but warn. Better force update location.
                             className="flex-[2] py-3 px-4 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50"
                         >
                             {isSubmitting ? "Đang lưu..." : "Lưu Thay Đổi"}

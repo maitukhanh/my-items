@@ -1,14 +1,23 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 
 interface AddItemFormProps {
     onItemAdded: () => void;
 }
 
+interface Location {
+    id: string;
+    name: string;
+}
+
 export default function AddItemForm({ onItemAdded }: AddItemFormProps) {
     const [name, setName] = useState("");
-    const [location, setLocation] = useState("");
+    const [locationId, setLocationId] = useState("");
+    const [locations, setLocations] = useState<Location[]>([]);
+    const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [errors, setErrors] = useState<string[]>([]);
@@ -16,16 +25,36 @@ export default function AddItemForm({ onItemAdded }: AddItemFormProps) {
     const [successMessage, setSuccessMessage] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Fetch locations when component mounts
+    useEffect(() => {
+        fetchLocations();
+    }, []);
+
+    const fetchLocations = async () => {
+        try {
+            const res = await fetch("/api/locations");
+            if (res.ok) {
+                const data = await res.json();
+                setLocations(data);
+                // Auto select first location if available? No, user should choose.
+            }
+        } catch (error) {
+            console.error("Failed to load locations", error);
+        } finally {
+            setIsLoadingLocations(false);
+        }
+    };
+
     const validate = (): string[] => {
         const errs: string[] = [];
         if (!name.trim()) errs.push("Vui lòng nhập tên món đồ");
-        if (!location.trim()) errs.push("Vui lòng nhập vị trí");
+        if (!locationId) errs.push("Vui lòng chọn vị trí");
         return errs;
     };
 
     const resetForm = () => {
         setName("");
-        setLocation("");
+        setLocationId("");
         setImageFile(null);
         setImagePreview(null);
         setErrors([]);
@@ -65,7 +94,7 @@ export default function AddItemForm({ onItemAdded }: AddItemFormProps) {
         try {
             const formData = new FormData();
             formData.append("name", name.trim());
-            formData.append("location", location.trim());
+            formData.append("locationId", locationId); // Send ID instead of text
             if (imageFile) {
                 formData.append("image", imageFile);
             }
@@ -148,19 +177,48 @@ export default function AddItemForm({ onItemAdded }: AddItemFormProps) {
                 />
             </div>
 
-            {/* Location input */}
+            {/* Location Select (Updated) */}
             <div className="mb-4">
-                <label htmlFor="item-location" className="block text-sm font-medium text-slate-700 mb-2">
-                    Vị Trí <span className="text-red-500">*</span>
-                </label>
-                <input
-                    id="item-location"
-                    type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="ví dụ: Ngăn kéo phòng khách"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300"
-                />
+                <div className="flex justify-between items-center mb-2">
+                    <label htmlFor="item-location" className="block text-sm font-medium text-slate-700">
+                        Vị Trí <span className="text-red-500">*</span>
+                    </label>
+                    <Link href="/locations" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                        + Tạo mới
+                    </Link>
+                </div>
+
+                {isLoadingLocations ? (
+                    <div className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-400">
+                        Đang tải danh sách...
+                    </div>
+                ) : (
+                    <div className="relative">
+                        <select
+                            id="item-location"
+                            value={locationId}
+                            onChange={(e) => setLocationId(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-300 appearance-none"
+                        >
+                            <option value="">-- Chọn vị trí --</option>
+                            {locations.map((loc) => (
+                                <option key={loc.id} value={loc.id}>
+                                    {loc.name}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-500">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                )}
+                {locations.length === 0 && !isLoadingLocations && (
+                    <p className="text-xs text-amber-600 mt-2">
+                        Chưa có vị trí nào. Hãy <Link href="/locations" className="underline font-bold">tạo vị trí trước</Link>.
+                    </p>
+                )}
             </div>
 
             {/* Image upload */}

@@ -9,10 +9,23 @@ datasource db {
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
-model Item {
+model Location {
   id        String   @id @default(uuid())
-  name      String
-  location  String
-  imageUrl  String?
+  name      String   @unique
+  items     Item[]
   createdAt DateTime @default(now())
+}
+
+model Item {
+  id          String    @id @default(uuid())
+  name        String
+  // Giữ trường location cũ (String) để không mất dữ liệu cũ, nhưng làm cho nó optional
+  legacyLocation String? 
+  
+  // Trường location mới (Relation)
+  location    Location? @relation(fields: [locationId], references: [id])
+  locationId  String?
+  
+  imageUrl    String?
+  createdAt   DateTime  @default(now())
 }
